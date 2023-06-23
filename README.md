@@ -3,8 +3,8 @@ nitrogen-based wallpaper manager script
 
 ## Installation and Usage
 You will need [nitrogen](https://github.com/l3ib/nitrogen) in order for the script to work.
-To install the script, just copy the main file to a directory in your `PATH` and make it executable.
-The zsh completion file can be installed anywhere on `fpath` (such as `/usr/share/zsh/functions/Completion/Linux`).
+To install the script, just copy the main file (`wpmgr`) to a directory in your `PATH` and make it executable.
+The zsh completion file (`_wpmgr`) can be installed anywhere on `fpath` (such as `/usr/share/zsh/functions/Completion/Linux`).
 ```
 Usage: wpmgr COMMAND [ARG]
 
