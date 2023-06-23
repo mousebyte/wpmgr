@@ -1,0 +1,143 @@
+#!/bin/zsh
+
+CONFIG_PATH=~/.config/nitrogen
+
+profile-exists () {
+    if [[ -n $1 && -a "$CONFIG_PATH/profiles/$1" ]]; then return 0
+    else return 1
+    fi
+}
+
+save-profile () {
+    if [[ -z $1 ]]; then
+        print "Please specify a name for the profile.\n"
+        return 1
+    elif profile-exists $1; then
+        # prompt for overwrite
+        read -q "CHOICE?Profile '$1' already exists. Overwrite? [y/N]"
+        print "\n"
+    fi
+    if [[ -z "$CHOICE" || "${(U)CHOICE}" == "Y" ]]; then
+        # save nitrogen settings as a profile
+        cp "$CONFIG_PATH/bg-saved.cfg" "$CONFIG_PATH/profiles/$1"
+        # update current profile name
+        echo $1 > "$CONFIG_PATH/current"
+        print "Profile '$1' saved.\n"
+    fi
+}
+
+restore-profile () {
+    if profile-exists $1; then
+        # replace nitrogen settings with profile
+        cp "$CONFIG_PATH/profiles/$1" "$CONFIG_PATH/bg-saved.cfg"
+        # update current profile name
+        echo $1 > "$CONFIG_PATH/current"
+        # restore profile settings
+        nitrogen --restore &> /dev/null
+        print "Profile '$1' restored.\n"
+    else print "Profile '$1' not found.\n"
+    fi
+}
+
+cycle-profile () {
+    # the first arg is either a pattern or an empty string
+    pattern="$1"
+
+    # the remaining args are a list of the saved profiles
+    # we need to shift the args so that the first profile is at $1
+    shift
+
+    # get current profile name
+    current=$(<"$CONFIG_PATH/current")
+
+    # let's break this down!
+    #
+    # $@[(Ie)$current] gets the index of the current profile in the list.
+    # $current contains our profile name. the (I) flag in the array subscript
+    # cause the expression to return the index of the last item that matches the
+    # string in $current. the (e) flag makes it use plain string matching instead of
+    # pattern matching.
+    #
+    # we then subtract the length of the list to get a rotation amount.
+    rot=$@[(Ie)$current]-$#@
+    # here we construct a new array from the list of profiles by rotating the current
+    # profile to the end of the list. thus the first profile in the list will be the one
+    # that comes after the current one alphabetically.
+    profiles=("$@[$rot,-1]" "${(@)@[1,$rot]}")
+
+    # now we just cycle through and restore the first matching profile
+    for p in $profiles; do
+        if [[ -z $pattern || $p =~ $pattern ]]; then
+            restore-profile $p
+            return 0
+        fi
+    done
+    print "No profile matching pattern '$pattern' was found.\n"
+    return 1
+}
+
+delete-profile () {
+    if profile-exists $1; then
+        # prompt for confirmation
+        read -q "CHOICE?Delete profile '$1'? [y/N]"
+        print "\n"
+
+        if [[ "${(U)CHOICE}" == "Y" ]]; then
+            rm "$CONFIG_PATH/profiles/$1"
+            print "Profile '$1' deleted.\n"
+        fi
+    else print "Profile '$1' not found.\n"
+    fi
+}
+
+new-profile () {
+    # first, run nitrogen so we can set our new wallpapers
+    nitrogen &> /dev/null
+    local profile
+    # then prompt for a profile name and save it
+    while [[ -z $profile ]]; do
+        read "profile?Enter a name for the profile: "
+        print "\n"
+    done
+    save-profile $profile
+}
+
+print-help () {
+    cat << EOM
+Usage: wpmgr COMMAND [ARG]
+
+  -l                        list profiles
+  -s, --save PROFILE        save current Nitrogen settings as a profile
+  -r, --restore PROFILE     load a profile
+  -d, --delete PROFILE      delete a profile
+  -n, --new                 create a new profile in Nitrogen 
+
+  -c, --next [PATTERN]      cycle forwards through profiles
+  -C, --prev [PATTERN]      cycle backwards through profiles
+
+If PATTERN is specified on the cycling commands, wpmgr will only cycle to profiles matching PATTERN.
+EOM
+}
+
+
+
+if [[ -z $1 ]]; then
+    print-help
+else case "$1" in
+    -s) ;&
+    --save) save-profile $2 ;;
+    -r) ;&
+    --restore) restore-profile $2 ;;
+    -d) ;&
+    --delete) delete-profile $2 ;;
+    -n) ;&
+    --new) new-profile ;;
+    -l) ls -1 $CONFIG_PATH/profiles ;;
+    -h) ;&
+    --help) print-help ;;
+    -c) ;&
+    --next) cycle-profile "$2" $(ls "$CONFIG_PATH/profiles") ;;
+    -C) ;&
+    --prev) cycle-profile "$2" $(ls -r "$CONFIG_PATH/profiles") ;;
+esac
+fi
