@@ -1,0 +1,12 @@
+#compdef wpmgr
+
+_arguments \
+  + '(command)' \
+    '-l[list profiles]' \
+    {-n,--new}'[new profile]' \
+    {-s,--save}'[save profile]:profile:($(ls ~/.config/nitrogen/profiles/))' \
+    {-r,--restore}'[restore profile]:profile:($(ls ~/.config/nitrogen/profiles/))' \
+    {-d,--delete}'[delete profile]:profile:($(ls ~/.config/nitrogen/profiles/))' \
+    {-c,--next}'[load next profile]' \
+    {-C,--prev}'[load previous profile]'
+
