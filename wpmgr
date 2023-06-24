@@ -119,6 +119,9 @@ If PATTERN is specified on the cycling commands, wpmgr will only cycle to profil
 EOM
 }
 
+if [[ ! -d "$CONFIG_PATH/profiles" ]]; then
+    mkdir -p "$CONFIG_PATH/profiles"
+fi
 
 
 if [[ -z $1 ]]; then
